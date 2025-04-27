@@ -1,0 +1,63 @@
+{
+  "expo": {
+    "name": "TarotNautica",
+    "slug": "tarotnautica-frontend",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tarotnautica.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#000000"
+      },
+      "package": "com.tarotnautica.app"
+    },
+    "web": {
+      "favicon": "./assets/icon.png",
+      "bundler": "webpack",
+      "output": {
+        "publicPath": "./",
+        "environment": "web"
+      },
+      "build": {
+        "babel": {
+          "include": [
+            "@expo/vector-icons",
+            "react-native-web"
+          ]
+        }
+      },
+      "name": "TarotNautica",
+      "shortName": "TarotNautica",
+      "description": "Tu aplicación de Tarot personal",
+      "lang": "es"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-font",
+      "expo-router"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    },
+    "developmentClient": {
+      "silentLaunch": true
+    },
+    "scheme": "tarotnautica"
+  }
+}
