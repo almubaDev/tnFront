@@ -6,11 +6,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  BackHandler,
 } from 'react-native';
 import { Video } from 'expo-av';
 import { globalStyles } from '../styles/globalStyles';
 import { API_URL } from '../config';
 import CustomAlert from '../components/CustomAlert';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function RegistroScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -26,6 +28,19 @@ export default function RegistroScreen({ navigation }) {
     message: '',
     buttons: []
   });
+
+  // Manejar el botón de retroceso en Android
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        navigation.goBack();
+        return true;
+      };
+
+      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    }, [navigation])
+  );
 
   // Función para mostrar alertas personalizadas
   const showAlert = (title, message, buttons = [{ text: 'Aceptar', onPress: () => setAlertVisible(false) }]) => {

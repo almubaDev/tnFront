@@ -9,7 +9,8 @@ import {
   ActivityIndicator,
   Dimensions,
   Animated,
-  Easing
+  Easing,
+  BackHandler
 } from 'react-native';
 import { Video } from 'expo-av';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -104,6 +105,44 @@ export default function TarotScreen() {
     message: '',
     buttons: []
   });
+
+  // Manejo de botón de retroceso dentro de la pantalla
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        // Si tenemos una tirada activa, permitir volver al estado anterior
+        if (tiradaActual) {
+          volverAPantallaPrincipal();
+          return true;
+        }
+        
+        // Si hay algún modal abierto, cerrarlo
+        if (modalSeleccionVisible || modalPreguntaVisible || 
+            modalCartaVisible || modalInterpretacionVisible || 
+            modalHistorialVisible) {
+          setModalSeleccionVisible(false);
+          setModalPreguntaVisible(false);
+          setModalCartaVisible(false);
+          setModalInterpretacionVisible(false);
+          setModalHistorialVisible(false);
+          return true;
+        }
+        
+        // De lo contrario, dejar que el manejador central de App.js se encargue
+        return false;
+      };
+
+      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    }, [
+      tiradaActual, 
+      modalSeleccionVisible, 
+      modalPreguntaVisible,
+      modalCartaVisible,
+      modalInterpretacionVisible,
+      modalHistorialVisible
+    ])
+  );
 
   // Función para mostrar alertas personalizadas
   const showAlert = (title, message, buttons = [{ text: 'Aceptar', onPress: () => setAlertVisible(false) }]) => {
@@ -248,6 +287,8 @@ export default function TarotScreen() {
   // Función para volver a la pantalla inicial de tarot sin tirada activa
   const volverAPantallaPrincipal = () => {
     setTiradaActual(null);
+    setCartaSeleccionada(null);
+    // Resetear cualquier otro estado necesario
   };
 
   // Manejar continuar después de seleccionar tirada

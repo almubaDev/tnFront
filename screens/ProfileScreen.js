@@ -102,6 +102,8 @@ export default function ProfileScreen() {
               // Eliminar tokens de sesión
               await AsyncStorage.removeItem('access');
               await AsyncStorage.removeItem('refresh');
+              await AsyncStorage.removeItem('lastLogin');
+              
               // Navegar a pantalla de bienvenida
               navigation.reset({
                 index: 0,

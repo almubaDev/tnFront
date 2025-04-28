@@ -1,6 +1,7 @@
 // apiHelpers.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from './config';
+import { sessionEvents } from './App';
 
 // Token refresh state variables
 let isRefreshing = false;
@@ -212,6 +213,9 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
       await AsyncStorage.removeItem('refresh');
       consecutiveAuthFailures = 0;
       
+      // Emit auth reset event to trigger navigation in App.js
+      sessionEvents.emit('authReset');
+      
       // Return a special error that will trigger a redirect
       return {
         ok: false,
@@ -229,6 +233,10 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
 
     if (!access && !refresh) {
       console.log('No hay tokens disponibles');
+      
+      // Emit auth reset event to trigger navigation in App.js
+      sessionEvents.emit('authReset');
+      
       return {
         ok: false,
         status: 401,
@@ -237,8 +245,16 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
       };
     }
 
-    // Try to use existing access token without proactive refresh
-    // Only refresh if we get a 401 response
+    // Check if we should proactively refresh the token
+    if (access && isTokenExpiring()) {
+      try {
+        console.log('Token proactivamente refrescando debido a umbral de tiempo...');
+        access = await refreshToken();
+      } catch (refreshError) {
+        console.error('Error en refresh proactivo:', refreshError);
+        // Continue with current token if refresh fails
+      }
+    }
 
     const authHeaders = {
       Authorization: `Bearer ${access}`,
@@ -302,6 +318,22 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
           } else {
             consecutiveAuthFailures++;
             console.log('Reintento fallido, fallas consecutivas:', consecutiveAuthFailures);
+            
+            // Si después del refresh sigue fallando, podría ser un problema más serio
+            if (retryResponse.status === 401) {
+              // Si continuamos teniendo errores 401 incluso después de refrescar,
+              // es probable que la sesión haya expirado completamente
+              if (consecutiveAuthFailures >= 3) {
+                // Emit auth reset event to trigger navigation in App.js
+                sessionEvents.emit('authReset');
+                return {
+                  ok: false,
+                  status: 401,
+                  authReset: true,
+                  json: () => Promise.resolve({ message: 'Sesión expirada.' })
+                };
+              }
+            }
           }
 
           return retryResponse;
@@ -309,6 +341,17 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
           console.error('Token refresh on 401 failed:', error);
           consecutiveAuthFailures++;
           console.log('Fallas consecutivas después del error de refresh:', consecutiveAuthFailures);
+          
+          // Si hay demasiados fallos, activar redirección a login
+          if (consecutiveAuthFailures >= 3) {
+            sessionEvents.emit('authReset');
+            return { 
+              ok: false, 
+              status: 401, 
+              authReset: true,
+              json: () => Promise.resolve({ message: 'Sesión caducada' }) 
+            };
+          }
           
           // Return a response object with status 401 to be consistent
           return { 

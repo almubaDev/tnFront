@@ -139,7 +139,30 @@ export const sessionEvents = {
 
 export default function App() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [initialRoute, setInitialRoute] = useState('Welcome');
+  const [isLoading, setIsLoading] = useState(true);
   const navigationRef = useRef(null);
+  
+  // Verificar token al inicio
+  useEffect(() => {
+    const checkToken = async () => {
+      try {
+        const access = await AsyncStorage.getItem('access');
+        const refresh = await AsyncStorage.getItem('refresh');
+        
+        if (access && refresh) {
+          // Si hay tokens, ir directamente a la pantalla principal
+          setInitialRoute('MainTabs');
+        }
+      } catch (error) {
+        console.error('Error al verificar tokens:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkToken();
+  }, []);
   
   // Handle authentication reset events
   useEffect(() => {
@@ -161,6 +184,7 @@ export default function App() {
     };
   }, []);
 
+  // Cargar fuentes
   useEffect(() => {
     async function loadFonts() {
       await Font.loadAsync({
@@ -172,7 +196,39 @@ export default function App() {
     loadFonts();
   }, []);
 
-  if (!fontsLoaded) {
+  // Función mejorada para manejar el botón de retroceso
+  const handleBackPress = () => {
+    if (navigationRef.current) {
+      // Obtener el estado actual de navegación
+      const currentRoute = navigationRef.current.getCurrentRoute();
+      
+      // Si estamos en una de las pantallas principales (MainTabs)
+      if (currentRoute && currentRoute.name === 'MainTabs') {
+        // Mostrar alerta de confirmación antes de salir
+        Alert.alert(
+          'Salir de la aplicación',
+          '¿Estás seguro que deseas salir?',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Salir', style: 'destructive', onPress: () => BackHandler.exitApp() }
+          ],
+          { cancelable: true }
+        );
+        return true; // Prevenimos el comportamiento por defecto
+      } 
+      
+      // Si podemos navegar hacia atrás, lo hacemos
+      if (navigationRef.current.canGoBack()) {
+        navigationRef.current.goBack();
+        return true; // Prevenimos el comportamiento por defecto
+      }
+    }
+    
+    // En otros casos, dejamos que el sistema maneje el retroceso
+    return false;
+  };
+
+  if (isLoading || !fontsLoaded) {
     return (
       <View style={{ 
         flex: 1, 
@@ -186,18 +242,11 @@ export default function App() {
           marginTop: 10,
           fontSize: 18
         }}>
-          Cargando fuentes...
+          Cargando...
         </Text>
       </View>
     );
   }
-
-  // Función para manejar el comportamiento personalizado del botón de retroceso
-  const handleBackPress = () => {
-    // Minimizar la aplicación directamente sin mostrar alerta
-    BackHandler.exitApp();
-    return true; // Previene el comportamiento por defecto
-  };
 
   return (
     <>
@@ -206,8 +255,7 @@ export default function App() {
 
       <NavigationContainer ref={navigationRef}>
         <Stack.Navigator 
-          //initialRouteName="Diagnostico" 
-          initialRouteName="Welcome" 
+          initialRouteName={initialRoute}
           screenOptions={{ 
             headerShown: false,
             gestureEnabled: false // Desactivar gestos de deslizamiento para retroceder

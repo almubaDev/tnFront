@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, Image, ScrollView,
-  TouchableOpacity, Modal, Alert
+  TouchableOpacity, Modal, Alert, BackHandler
 } from 'react-native';
 import { fetchWithAuth } from '../apiHelpers';
 import VideoBackground from '../components/VideoBackground';
@@ -9,6 +9,7 @@ import CustomAlert from '../components/CustomAlert';
 import { PayPalButtons } from "@paypal/react-paypal-js";
 import { PAYPAL_CONFIG } from '../config/payment';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useFocusEffect } from '@react-navigation/native';
 
 const GEM_PACKAGES = [
   { amount: 4.99, gems: 10 },
@@ -20,6 +21,15 @@ export default function StoreScreen({ navigation }) {
   const [perfil, setPerfil] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedPackage, setSelectedPackage] = useState(null);
+  
+  // Manejo del botón de retroceso
+  useFocusEffect(
+    React.useCallback(() => {
+      // Dentro de MainTabs, dejamos que el manejador centralizado de App.js se encargue
+      // ya que estamos en una pantalla principal
+      return () => {};
+    }, [])
+  );
   
   // Estados para alertas personalizadas
   const [alertVisible, setAlertVisible] = useState(false);
@@ -52,6 +62,16 @@ export default function StoreScreen({ navigation }) {
   useEffect(() => {
     cargarPerfil();
   }, []);
+  
+  // Actualizar perfil cada vez que la pantalla obtiene foco
+  useFocusEffect(
+    React.useCallback(() => {
+      cargarPerfil();
+      return () => {
+        // Cleanup si es necesario
+      };
+    }, [])
+  );
 
   const handlePackageSelect = (pkg) => {
     setSelectedPackage(pkg);
@@ -66,17 +86,17 @@ export default function StoreScreen({ navigation }) {
         setPerfil(data);
       }
       
-      Alert.alert('¡Compra exitosa!', `Has adquirido ${selectedPackage.gems} gemas`);
+      showAlert('¡Compra exitosa!', `Has adquirido ${selectedPackage.gems} gemas`);
       setSelectedPackage(null);
     } catch (error) {
       console.error('Error al procesar el pago:', error);
-      Alert.alert('Error', 'Hubo un problema al procesar tu pago');
+      showAlert('Error', 'Hubo un problema al procesar tu pago');
     }
   };
 
   const handlePaymentError = (error) => {
     console.error('Error en el pago:', error);
-    Alert.alert('Error', 'No se pudo completar el pago');
+    showAlert('Error', 'No se pudo completar el pago');
   };
 
   return (

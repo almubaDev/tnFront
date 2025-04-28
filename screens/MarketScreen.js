@@ -6,7 +6,8 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
-  ScrollView
+  ScrollView,
+  BackHandler
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { fetchWithAuth } from '../apiHelpers';
@@ -18,6 +19,15 @@ export default function MarketScreen() {
   const navigation = useNavigation();
   const [perfil, setPerfil] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // Manejo del botón de retroceso
+  useFocusEffect(
+    React.useCallback(() => {
+      // Dentro de MainTabs, dejamos que el manejador centralizado de App.js se encargue
+      // ya que estamos en una pantalla principal
+      return () => {};
+    }, [])
+  );
   
   // Estados para alertas personalizadas
   const [alertVisible, setAlertVisible] = useState(false);

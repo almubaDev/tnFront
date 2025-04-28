@@ -15,6 +15,7 @@ import CustomAlert from '../components/CustomAlert';
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   
   // Estados para alerta personalizada
   const [alertVisible, setAlertVisible] = useState(false);
@@ -31,6 +32,12 @@ export default function LoginScreen({ navigation }) {
   };
 
   const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      showAlert('Datos incompletos', 'Por favor ingresa tu correo y contraseña');
+      return;
+    }
+
+    setIsLoading(true);
     try {
       const response = await fetch(`${API_URL}/token/`, {
         method: 'POST',
@@ -38,14 +45,29 @@ export default function LoginScreen({ navigation }) {
         body: JSON.stringify({ email, password }),
       });
 
-      if (!response.ok) throw new Error('Credenciales inválidas');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Credenciales inválidas');
+      }
 
       const data = await response.json();
+      
+      // Guardar tokens de forma segura
       await AsyncStorage.setItem('access', data.access);
       await AsyncStorage.setItem('refresh', data.refresh);
-      navigation.replace('MainTabs');
+      
+      // Guardar hora de inicio de sesión para token refresh
+      await AsyncStorage.setItem('lastLogin', Date.now().toString());
+      
+      // Navegar a la pantalla principal
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'MainTabs' }],
+      });
     } catch (error) {
       showAlert('Error de inicio de sesión', error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -82,8 +104,21 @@ export default function LoginScreen({ navigation }) {
           value={password}
         />
 
-        <TouchableOpacity style={globalStyles.button} onPress={handleLogin}>
-          <Text style={globalStyles.buttonText}>Iniciar sesión</Text>
+        <TouchableOpacity 
+          style={[globalStyles.button, isLoading && styles.buttonDisabled]} 
+          onPress={handleLogin}
+          disabled={isLoading}
+        >
+          <Text style={globalStyles.buttonText}>
+            {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backButtonText}>Volver</Text>
         </TouchableOpacity>
       </View>
       
@@ -115,5 +150,17 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginBottom: 20,
     fontFamily: 'TarotBody',
+  },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
+  backButton: {
+    marginTop: 20,
+    alignSelf: 'center',
+  },
+  backButtonText: {
+    color: '#d6af36',
+    fontFamily: 'TarotBody',
+    textDecorationLine: 'underline',
   },
 });

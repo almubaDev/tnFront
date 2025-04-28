@@ -1,11 +1,27 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, BackHandler } from 'react-native';
 import { Video } from 'expo-av';
 import { globalStyles } from '../styles/globalStyles';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function WelcomeScreen() {
   const navigation = useNavigation();
+
+  // Manejo del botón de retroceso en la pantalla de bienvenida
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        // En la pantalla de bienvenida, confirmamos antes de salir
+        BackHandler.exitApp();
+        return true; // Prevenimos el comportamiento por defecto
+      };
+
+      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    }, [])
+  );
 
   return (
     <View style={styles.container}>
@@ -78,7 +94,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontFamily: 'TarotBody',
   },
-
   buttonTextLog: {
     color: '#000',
     fontSize: 16,
