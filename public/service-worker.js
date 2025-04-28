@@ -1,95 +1,147 @@
-// Service Worker para TarotNautica corregido
+// Service Worker mejorado para TarotNautica
+const CACHE_NAME = 'tarotnautica-v2';
+const OFFLINE_PAGE = '/index.html';
 
-const CACHE_NAME = 'tarotnautica-v1';
-const filesToCache = [
+// Lo que vamos a cachear inicialmente
+const INITIAL_CACHED_RESOURCES = [
   '/',
   '/index.html',
-  '/static/js/main.*.js'
+  '/static/js/main.*.js',
+  '/static/css/main.*.css',
+  '/manifest.json',
+  '/favicon.ico'
 ];
 
-// Instalación del Service Worker
+// Instalación: cachea recursos estáticos iniciales
 self.addEventListener('install', (event) => {
   console.log('Service Worker instalando...');
-  self.skipWaiting();
+  
+  // Intentar abrir el caché y agregar recursos iniciales
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        console.log('Service Worker: cacheando archivos');
+        // Usar el método addAll puede causar fallos si algún archivo no existe
+        // Vamos a usar promises individuales para ser más robustos
+        const cachePromises = INITIAL_CACHED_RESOURCES.map(url => {
+          // Cachar errores para recursos individuales que no se puedan obtener
+          return cache.add(url).catch(error => {
+            console.log(`Error al cachear ${url}: ${error}`);
+          });
+        });
+        
+        return Promise.all(cachePromises);
+      })
+      .then(() => {
+        console.log('Service Worker: recursos iniciales cacheados');
+        return self.skipWaiting();
+      })
+  );
 });
 
-// Activación del Service Worker
+// Activación: limpia caches antiguos
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker activado');
-
-  event.waitUntil(clients.claim());
+  console.log('Service Worker: activado');
   
+  // Borrar caches antiguos
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
+    caches.keys().then(cacheNames => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
+        cacheNames.map(cacheName => {
           if (cacheName !== CACHE_NAME) {
-            console.log('Eliminando caché antigua:', cacheName);
+            console.log('Service Worker: borrando caché antigua', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
+    }).then(() => {
+      console.log('Service Worker: caché actualizado a', CACHE_NAME);
+      // Tomar control inmediato de todas las pestañas
+      return self.clients.claim();
     })
   );
 });
 
-// Interceptar solicitudes fetch
+// Interceptar fetch: implementa estrategia de caché
 self.addEventListener('fetch', (event) => {
+  // Ignorar solicitudes que no sean http/https
   if (!event.request.url.startsWith('http')) {
     return;
   }
-
+  
+  // Manejar las solicitudes de navegación: siempre servir la página principal para rutas cliente
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => {
+          return caches.match(OFFLINE_PAGE);
+        })
+    );
+    return;
+  }
+  
+  // Para recursos estáticos: estrategia Cache First, luego Network
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        if (
-          event.request.method === 'GET' &&
-          response.status === 200 &&
-          !event.request.url.includes('?') &&
-          (event.request.url.startsWith('http://') || event.request.url.startsWith('https://'))
-        ) {
-          try {
-            const responseToCache = response.clone();
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                cache.put(event.request, responseToCache);
-              })
-              .catch((error) => {
-                console.log('Error abriendo caché:', error);
-              });
-          } catch (e) {
-            console.log('Error al procesar respuesta para caché:', e);
-          }
+    caches.match(event.request)
+      .then(cachedResponse => {
+        // Si se encuentra en caché, devolver la respuesta cacheada
+        if (cachedResponse) {
+          return cachedResponse;
         }
-        return response;
-      })
-      .catch(() => {
-        console.log('Red falló, buscando en caché:', event.request.url);
-        return caches.match(event.request)
-          .then((cachedResponse) => {
-            if (cachedResponse) {
-              return cachedResponse;
+        
+        // Si no está en caché, buscar en la red
+        return fetch(event.request)
+          .then(response => {
+            // Verificar respuesta válida
+            if (!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
             }
-            if (event.request.mode === 'navigate') {
-              return caches.match('/index.html');
+            
+            // Cache la respuesta para futuros usos - clonar porque se usa una vez
+            const responseToCache = response.clone();
+            
+            // No cachear APIs o URLs con parámetros de consulta
+            const url = new URL(event.request.url);
+            const shouldCache = !url.pathname.includes('/api/') && !url.search;
+            
+            if (shouldCache) {
+              caches.open(CACHE_NAME)
+                .then(cache => {
+                  cache.put(event.request, responseToCache);
+                });
             }
-            return new Response('Sin conexión', {
-              status: 503,
-              statusText: 'Servicio no disponible',
-              headers: new Headers({
-                'Content-Type': 'text/plain'
-              })
-            });
+            
+            return response;
+          })
+          .catch(error => {
+            console.log('Fetch falló:', error);
+            
+            // Si es un HTML, proporcionar la página offline
+            if (event.request.headers.get('Accept').includes('text/html')) {
+              return caches.match(OFFLINE_PAGE);
+            }
+            
+            // Para otros recursos, simplemente fallar
+            return new Response(
+              'Sin conexión. Por favor, revisa tu conexión a internet.',
+              {
+                status: 503,
+                statusText: 'Servicio no disponible',
+                headers: new Headers({
+                  'Content-Type': 'text/plain'
+                })
+              }
+            );
           });
       })
   );
 });
 
-// Manejar mensajes
+// Manejar mensajes: permite forzar la actualización cuando hay una nueva versión
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
 });
 
-console.log('Service Worker cargado correctamente');
+console.log('Service Worker: configurado correctamente - v2');

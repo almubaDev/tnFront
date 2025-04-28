@@ -1,14 +1,13 @@
 [build]
-  command = "npx expo export:web"
+  command = "npx expo export:web && node add-sw-registration.js"
   publish = "web-build"
 
-# Redireccionamiento para SPA
+# Redirección para SPA - esto es crucial para React Router
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-  force = false
-  conditions = {Role = ["anonymous"]}
+  force = true
 
 # Encabezados específicos para el Service Worker
 [[headers]]
@@ -16,3 +15,24 @@
   [headers.values]
     Cache-Control = "max-age=0, no-cache, no-store, must-revalidate"
     Content-Type = "application/javascript"
+
+# Encabezados para recursos estáticos
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[[headers]]
+  for = "/*.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[[headers]]
+  for = "/*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"

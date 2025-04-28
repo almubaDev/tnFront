@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-
 import { View, ActivityIndicator, Platform, TouchableOpacity, Text, Image, BackHandler, Alert } from 'react-native';
-
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-
+import { NavigationContainer } from '@react-navigation/native';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Font from 'expo-font';
@@ -26,6 +24,9 @@ import PocionesAmorScreen from './screens/PocionesAmorScreen';
 import PocionesDineroScreen from './screens/PocionesDineroScreen';
 import PocionesMiscelaneoScreen from './screens/PocionesMiscelaneoScreen';
 import * as SplashScreen from 'expo-splash-screen';
+
+// Importar componente de instalación PWA
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 import { PAYPAL_CLIENT_ID } from './config';
 
@@ -124,8 +125,6 @@ export const sessionEvents = {
 export default function App() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const navigationRef = useRef(null);
-  const [installPrompt, setInstallPrompt] = useState(null);
-  const [showInstallButton, setShowInstallButton] = useState(false);
   
   // Handle authentication reset events
   useEffect(() => {
@@ -145,16 +144,6 @@ export default function App() {
     return () => {
       unsubscribe();
     };
-  }, []);
-
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        setInstallPrompt(e);
-        setShowInstallButton(true);
-      });
-    }
   }, []);
 
   useEffect(() => {
@@ -197,36 +186,8 @@ export default function App() {
 
   return (
     <>
-      {showInstallButton && (
-        <TouchableOpacity
-          style={{
-            position: 'absolute',
-            bottom: 30,
-            right: 20,
-            backgroundColor: '#d6af36',
-            paddingVertical: 10,
-            paddingHorizontal: 20,
-            borderRadius: 30,
-            zIndex: 1000,
-          }}
-          onPress={() => {
-            if (installPrompt) {
-              installPrompt.prompt();
-              installPrompt.userChoice.then((choiceResult) => {
-                if (choiceResult.outcome === 'accepted') {
-                  console.log('Usuario instaló TarotNautica');
-                } else {
-                  console.log('Usuario canceló la instalación');
-                }
-                setInstallPrompt(null);
-                setShowInstallButton(false);
-              });
-            }
-          }}
-        >
-          <Text style={{ color: '#000', fontWeight: 'bold' }}>Instalar App</Text>
-        </TouchableOpacity>
-      )}
+      {/* Componente de instalación PWA que funciona en todas las plataformas */}
+      <PWAInstallPrompt />
 
       <NavigationContainer ref={navigationRef}>
         <Stack.Navigator 

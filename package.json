@@ -2,12 +2,13 @@
   "name": "tarotnautica-frontend",
   "version": "1.0.0",
   "main": "index.js",
+
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build:web": "cross-env NODE_ENV=production expo export:web && webpack --config webpack.config.js",
+    "build:web": "cross-env NODE_ENV=production expo export:web && node add-sw-registration.js",
     "deploy:web": "npm run build:web && netlify deploy --dir=web-build --prod"
   },
   "dependencies": {
