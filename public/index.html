@@ -3,7 +3,16 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#d6af36" />
+    <meta name="description" content="TarotNautica - Tu aplicación de Tarot Personal" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="TarotNautica" />
+    
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/favicon-192.png" />
+    
     <title>TarotNautica</title>
 </head>
 <body>
@@ -20,20 +29,7 @@
                         console.log('Error al registrar el Service Worker:', error);
                     });
             });
-            
-            // Manejo de errores específicos
-            window.addEventListener('unhandledrejection', function(event) {
-                if (event.reason && 
-                   (event.reason.message && event.reason.message.includes('chrome-extension') ||
-                    event.reason.toString().includes('chrome-extension'))) {
-                    // Prevenir que aparezca el error en la consola
-                    event.preventDefault();
-                    console.log('Ignorando error del Service Worker relacionado con chrome-extension');
-                }
-            });
         }
     </script>
-    <script src="https://www.paypal.com/sdk/js?client-id=RN_0c5kwagyFzXN1WKhOXNhfQtVcbe2MaoX2uGebPvPjQHlpkDcnKUAv41_oL66oY-7dpDdhrbEqVrZ&currency=USD"></script>
-
 </body>
 </html>

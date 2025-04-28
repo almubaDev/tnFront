@@ -10,6 +10,13 @@ const swDestPath = path.join(__dirname, 'web-build', 'service-worker.js');
 const redirectsPath = path.join(__dirname, 'public', '_redirects');
 const redirectsDestPath = path.join(__dirname, 'web-build', '_redirects');
 
+// Lista de iconos para PWA
+const iconFiles = [
+  { source: path.join(__dirname, 'public', 'favicon-192.png'), dest: path.join(__dirname, 'web-build', 'favicon-192.png') },
+  { source: path.join(__dirname, 'public', 'favicon-512.png'), dest: path.join(__dirname, 'web-build', 'favicon-512.png') },
+  { source: path.join(__dirname, 'public', 'favicon.ico'), dest: path.join(__dirname, 'web-build', 'favicon.ico') }
+];
+
 // Código para registrar el service worker
 const swRegistrationCode = `
 <script>
@@ -50,6 +57,20 @@ const swRegistrationCode = `
 </script>
 `;
 
+// Copiar iconos
+iconFiles.forEach(icon => {
+  try {
+    if (fs.existsSync(icon.source)) {
+      fs.copyFileSync(icon.source, icon.dest);
+      console.log(`Ícono copiado correctamente: ${path.basename(icon.source)}`);
+    } else {
+      console.error(`¡Advertencia! No se encontró el ícono: ${path.basename(icon.source)}`);
+    }
+  } catch (err) {
+    console.error(`Error al copiar ícono ${path.basename(icon.source)}:`, err);
+  }
+});
+
 // Copiar manifest.json a la carpeta web-build
 fs.copyFile(manifestSourcePath, manifestDestPath, (err) => {
   if (err) {
@@ -69,13 +90,13 @@ fs.copyFile(manifestSourcePath, manifestDestPath, (err) => {
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/favicon-192.png",
+      "src": "favicon-192.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any maskable"
     },
     {
-      "src": "/favicon-512.png",
+      "src": "favicon-512.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
@@ -329,19 +350,29 @@ fs.readFile(htmlPath, 'utf8', (err, data) => {
   });
 });
 
-// Verificar y generar íconos si no existen
-const icon192Path = path.join(__dirname, 'web-build', 'favicon-192.png');
-const icon512Path = path.join(__dirname, 'web-build', 'favicon-512.png');
+// Verificar y reportar el estado de los iconos
+console.log("\n=== Verificación de iconos para PWA ===");
+iconFiles.forEach(icon => {
+  const exists = fs.existsSync(icon.source);
+  console.log(`${path.basename(icon.source)}: ${exists ? '✅ Encontrado' : '❌ No encontrado'}`);
+});
 
-// Función para verificar si los iconos existen
-const checkIcons = () => {
-  if (!fs.existsSync(icon192Path) || !fs.existsSync(icon512Path)) {
-    console.log('Iconos para PWA no encontrados. Asegúrate de tener los archivos favicon-192.png y favicon-512.png en la carpeta public.');
-    console.log('Sin estos iconos, la instalación en dispositivos móviles podría no funcionar correctamente.');
-  } else {
-    console.log('Iconos para PWA verificados correctamente.');
+// Verificación del manifest.json
+console.log("\n=== Verificación de manifest.json ===");
+if (fs.existsSync(manifestSourcePath)) {
+  console.log("✅ manifest.json encontrado en la carpeta public");
+  try {
+    const manifest = JSON.parse(fs.readFileSync(manifestSourcePath, 'utf8'));
+    if (manifest.icons && manifest.icons.length > 0) {
+      console.log(`✅ manifest.json contiene ${manifest.icons.length} definiciones de iconos`);
+    } else {
+      console.log("❌ manifest.json no contiene definiciones de iconos adecuadas");
+    }
+  } catch (e) {
+    console.log("❌ Error al leer manifest.json:", e.message);
   }
-};
+} else {
+  console.log("❌ manifest.json no encontrado en la carpeta public");
+}
 
-// Verificar iconos
-checkIcons();
+console.log("\nProceso completado. Si todos los archivos están ✅, tu PWA debería mostrar los iconos correctamente.");
