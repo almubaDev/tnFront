@@ -7,20 +7,20 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build:web": "expo export:web",
-    "serve": "serve web-build",
-    "generate-pwa-assets": "node scripts/generate-pwa-assets.js"
+    "build:web": "cross-env NODE_ENV=production expo export:web && webpack --config webpack.config.js",
+    "deploy:web": "npm run build:web && netlify deploy --dir=web-build --prod"
   },
   "dependencies": {
     "@expo/metro-runtime": "~4.0.1",
-    "@expo/webpack-config": "^19.0.0",
+    "@expo/webpack-config": "^18.0.1",
     "@paypal/react-paypal-js": "^8.8.3",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/material-top-tabs": "^7.2.10",
     "@react-navigation/native": "^7.1.5",
     "@react-navigation/native-stack": "^7.3.9",
-    "expo": "~52.0.43",
+    "crypto-browserify": "^3.12.1",
+    "expo": "~49.0.13",
     "expo-app-loading": "^2.1.1",
     "expo-av": "~15.0.2",
     "expo-font": "~13.0.4",
@@ -29,6 +29,9 @@
     "expo-splash-screen": "~0.29.22",
     "expo-status-bar": "~2.0.1",
     "expo-web-browser": "~14.0.2",
+    "os-browserify": "^0.3.0",
+    "path-browserify": "^1.0.1",
+    "process": "^0.11.10",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-native": "0.76.9",
@@ -42,6 +45,7 @@
     "serve": "^14.0.0",
     "source-map": "^0.7.4",
     "source-map-support": "^0.5.21",
+    "stream-browserify": "^3.0.0",
     "util": "^0.12.5",
     "webpack": "^5.99.7",
     "webpack-cli": "^6.0.1",
@@ -50,6 +54,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "cross-env": "^7.0.3",
     "sharp": "^0.32.1"
   },
   "private": true

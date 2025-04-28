@@ -1,0 +1,18 @@
+[build]
+  command = "npx expo export:web"
+  publish = "web-build"
+
+# Redireccionamiento para SPA
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
+  conditions = {Role = ["anonymous"]}
+
+# Encabezados específicos para el Service Worker
+[[headers]]
+  for = "/service-worker.js"
+  [headers.values]
+    Cache-Control = "max-age=0, no-cache, no-store, must-revalidate"
+    Content-Type = "application/javascript"
