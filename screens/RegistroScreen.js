@@ -70,7 +70,11 @@ export default function RegistroScreen({ navigation }) {
       const response = await fetch(`${API_URL}/registro/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, password2 }),
+        body: JSON.stringify({ 
+          email: email,
+          username: email,  // 🔥 Importantísimo: agregar username igual a email
+          password: password,
+        }),
       });
 
       const data = await response.json();

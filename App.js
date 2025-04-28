@@ -23,6 +23,7 @@ import SubmenuPocionesScreen from './screens/SubmenuPocionesScreen';
 import PocionesAmorScreen from './screens/PocionesAmorScreen';
 import PocionesDineroScreen from './screens/PocionesDineroScreen';
 import PocionesMiscelaneoScreen from './screens/PocionesMiscelaneoScreen';
+import DiagnosticScreen from './screens/DiagnosticScreen';
 import * as SplashScreen from 'expo-splash-screen';
 
 // Importar componente de instalación PWA
@@ -30,8 +31,22 @@ import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 import { PAYPAL_CLIENT_ID } from './config';
 
-
-
+// Monitor global de fetch para debugging
+if (__DEV__) {
+  global._fetch = fetch;
+  global.fetch = (...args) => {
+    console.log("Fetch request:", args);
+    return global._fetch(...args)
+      .then(response => {
+        console.log("Fetch response:", response);
+        return response;
+      })
+      .catch(error => {
+        console.error("Fetch error:", error);
+        throw error;
+      });
+  };
+}
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -191,6 +206,7 @@ export default function App() {
 
       <NavigationContainer ref={navigationRef}>
         <Stack.Navigator 
+          //initialRouteName="Diagnostico" 
           initialRouteName="Welcome" 
           screenOptions={{ 
             headerShown: false,
@@ -204,6 +220,7 @@ export default function App() {
           />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Registro" component={RegistroScreen} />
+          <Stack.Screen name="Diagnostico" component={DiagnosticScreen} />
           <Stack.Screen 
             name="MainTabs" 
             options={{

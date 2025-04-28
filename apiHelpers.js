@@ -112,6 +112,8 @@ const refreshToken = async (retryCount = 0) => {
   lastTokenRefresh = Date.now();
 
   try {
+    console.log('Intentando refrescar el token...');
+    
     const refresh = await AsyncStorage.getItem('refresh');
     if (!refresh) {
       console.warn('No refresh token available');
@@ -123,6 +125,8 @@ const refreshToken = async (retryCount = 0) => {
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
     try {
+      console.log(`Enviando solicitud a: ${API_URL}/token/refresh/`);
+      
       const refreshResponse = await fetch(`${API_URL}/token/refresh/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -131,6 +135,8 @@ const refreshToken = async (retryCount = 0) => {
       });
 
       clearTimeout(timeoutId);
+      
+      console.log('Respuesta de refresh:', refreshResponse.status, refreshResponse.statusText);
 
       if (!refreshResponse.ok) {
         // If we haven't reached max retries, try again
@@ -144,14 +150,17 @@ const refreshToken = async (retryCount = 0) => {
       }
 
       const data = await refreshResponse.json();
+      console.log('Token refrescado exitosamente');
+      
       await AsyncStorage.setItem('access', data.access);
-      console.log('Token refreshed successfully');
       
       isRefreshing = false;
       onTokenRefreshed(data.access);
       return data.access;
     } catch (fetchError) {
       clearTimeout(timeoutId);
+      
+      console.error('Error en la solicitud de refresh:', fetchError);
       
       // Handle timeout or network errors with retry
       if ((fetchError.name === 'AbortError' || fetchError.message.includes('Network request failed')) 
@@ -189,6 +198,8 @@ const AUTH_RESET_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 export const fetchWithAuth = async (endpoint, options = {}) => {
   try {
+    console.log(`Realizando petición a: ${API_URL}${endpoint}`);
+    
     // If we've had a successful request recently, reset the failure counter
     if (Date.now() - lastAuthSuccess > AUTH_RESET_INTERVAL) {
       consecutiveAuthFailures = 0;
@@ -213,7 +224,11 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
     let access = await AsyncStorage.getItem('access');
     const refresh = await AsyncStorage.getItem('refresh');
 
+    console.log('Token access disponible:', !!access);
+    console.log('Token refresh disponible:', !!refresh);
+
     if (!access && !refresh) {
+      console.log('No hay tokens disponibles');
       return {
         ok: false,
         status: 401,
@@ -230,19 +245,26 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
       'Content-Type': 'application/json',
       ...(options.headers || {}),
     };
+    
+    console.log('Headers enviados:', JSON.stringify(authHeaders));
 
     // Add timeout to prevent hanging requests
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
     
     try {
-      const response = await fetch(`${API_URL}${endpoint}`, {
+      const fullUrl = `${API_URL}${endpoint}`;
+      console.log('URL completa:', fullUrl);
+      
+      const response = await fetch(fullUrl, {
         ...options,
         headers: authHeaders,
         signal: controller.signal
       });
 
       clearTimeout(timeoutId);
+      
+      console.log('Respuesta recibida:', response.status, response.statusText);
 
       // On success, reset failure counter and update success timestamp
       if (response.ok) {
@@ -253,31 +275,40 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
 
       // Handle 401 errors by trying to refresh the token
       if (response.status === 401 && refresh) {
+        console.log('Token expirado (401), intentando refrescar...');
+        
         try {
           const newToken = await refreshToken();
+          console.log('Token refrescado, reintentando petición original');
           
           // Retry the original request with new token
           const retryHeaders = {
             ...authHeaders,
             Authorization: `Bearer ${newToken}`,
           };
+          
+          console.log('Headers para reintento:', JSON.stringify(retryHeaders));
 
           const retryResponse = await fetch(`${API_URL}${endpoint}`, {
             ...options,
             headers: retryHeaders,
           });
+          
+          console.log('Respuesta de reintento:', retryResponse.status, retryResponse.statusText);
 
           if (retryResponse.ok) {
             consecutiveAuthFailures = 0;
             lastAuthSuccess = Date.now();
           } else {
             consecutiveAuthFailures++;
+            console.log('Reintento fallido, fallas consecutivas:', consecutiveAuthFailures);
           }
 
           return retryResponse;
         } catch (error) {
           console.error('Token refresh on 401 failed:', error);
           consecutiveAuthFailures++;
+          console.log('Fallas consecutivas después del error de refresh:', consecutiveAuthFailures);
           
           // Return a response object with status 401 to be consistent
           return { 
@@ -292,6 +323,8 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
       return response;
     } catch (fetchError) {
       clearTimeout(timeoutId);
+      
+      console.error('Error de fetch:', fetchError);
       
       if (fetchError.name === 'AbortError') {
         console.error('Request timed out:', endpoint);
@@ -310,7 +343,7 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
     return { 
       ok: false, 
       status: 0, 
-      json: () => Promise.resolve({ message: 'Error de red' }) 
+      json: () => Promise.resolve({ message: 'Error de red: ' + error.message }) 
     };
   }
 };

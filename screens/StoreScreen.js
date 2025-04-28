@@ -11,10 +11,9 @@ import { PAYPAL_CONFIG } from '../config/payment';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const GEM_PACKAGES = [
-  { amount: 9.99, gems: 500 },
-  { amount: 9.99, gems: 1100 },
-  { amount: 19.99, gems: 2400 },
-  { amount: 49.99, gems: 6500 },
+  { amount: 4.99, gems: 10 },
+  { amount: 9.99, gems: 30 },
+  { amount: 14.99, gems: 50 },
 ];
 
 export default function StoreScreen({ navigation }) {
