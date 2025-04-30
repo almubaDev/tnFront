@@ -8,10 +8,12 @@ import {
   Dimensions
 } from 'react-native';
 import { Video } from 'expo-av';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { fetchWithAuth } from '../apiHelpers';
 import { globalStyles } from '../styles/globalStyles';
 import CustomAlert from '../components/CustomAlert';
+import BackButton from '../components/BackButton';
+import { navigationHistory } from '../App';
 
 const { width } = Dimensions.get('window');
 
@@ -27,6 +29,18 @@ export default function SubmenuPocionesScreen() {
     message: '',
     buttons: []
   });
+
+  // Registrar esta pantalla en el histórico de navegación
+  useFocusEffect(
+    React.useCallback(() => {
+      // No necesitamos añadir un nuevo registro aquí porque ya lo hicimos al navegar
+      console.log('Current navigation history:', navigationHistory.history);
+      
+      return () => {
+        // Cleanup si es necesario
+      };
+    }, [])
+  );
 
   // Función para mostrar alertas personalizadas
   const showAlert = (title, message, buttons = [{ text: 'Aceptar', onPress: () => setAlertVisible(false) }]) => {
@@ -51,12 +65,19 @@ export default function SubmenuPocionesScreen() {
     cargarPerfil();
   }, []);
 
+  // Navegar a subpantallas con registro en histórico
+  const navigateWithHistory = (screenName) => {
+    // Registrar la pantalla actual antes de navegar
+    navigationHistory.push('SubmenuPociones');
+    navigation.navigate(screenName);
+  };
+
   // Verificar si el usuario tiene suscripción para acceder a las pociones
   const verificarAcceso = (destino) => {
     if (!perfil) return;
     
     if (perfil.tiene_suscripcion) {
-      navigation.navigate(destino);
+      navigateWithHistory(destino);
     } else {
       // Si no tiene suscripción, mostrar mensaje y redirigir a pantalla de suscripción
       showAlert("Acceso Restringido", "Las pociones místicas solo están disponibles para usuarios con suscripción activa.", [
@@ -101,6 +122,7 @@ export default function SubmenuPocionesScreen() {
         isLooping
         style={StyleSheet.absoluteFill}
       />
+      <BackButton />
       <View style={styles.overlay}>
         <Text style={styles.titulo}>Laboratario de Pociones</Text>
         <Text style={styles.subtitulo}>Elixires mágicos para cada necesidad</Text>
@@ -140,7 +162,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 80,
   },
   titulo: {
     fontFamily: 'TarotTitles',

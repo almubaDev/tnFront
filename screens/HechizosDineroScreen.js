@@ -3,8 +3,10 @@ import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, ScrollView, ImageBackground, ActivityIndicator
 } from 'react-native';
 import { fetchWithAuth } from '../apiHelpers';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import CustomAlert from '../components/CustomAlert';
+import BackButton from '../components/BackButton';
+import { navigationHistory } from '../App';
 
 export default function HechizosDineroScreen() {
   const [hechizos, setHechizos] = useState([]);
@@ -13,6 +15,20 @@ export default function HechizosDineroScreen() {
   const [perfil, setPerfil] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
+  
+  // Registrar esta pantalla en el histórico cuando obtiene el foco
+  useFocusEffect(
+    React.useCallback(() => {
+      // Verificamos si ya está registrada para evitar duplicados
+      if (navigationHistory.peek() !== 'HechizosDinero') {
+        console.log('Current navigation history in HechizosDinero:', navigationHistory.history);
+      }
+      
+      return () => {
+        // Cleanup si es necesario
+      };
+    }, [])
+  );
   
   // Estados para alertas personalizadas
   const [alertVisible, setAlertVisible] = useState(false);
@@ -89,6 +105,8 @@ export default function HechizosDineroScreen() {
           { text: "Cancelar", onPress: () => setAlertVisible(false) },
           { text: "Ir a la tienda", onPress: () => {
             setAlertVisible(false);
+            // Registrar el estado actual antes de navegar
+            navigationHistory.push('HechizosDinero');
             navigation.navigate('Tienda');
           }}
         ]
@@ -159,6 +177,7 @@ export default function HechizosDineroScreen() {
       style={styles.background}
       resizeMode="cover"
     >
+      <BackButton />
       <View style={styles.overlay}>
         <Text style={styles.headerTitle}>Hechizos de Dinero</Text>
         
@@ -255,7 +274,8 @@ const styles = StyleSheet.create({
   background: { flex: 1 },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)'
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingTop: 80
   },
   headerTitle: {
     fontFamily: 'TarotTitles',

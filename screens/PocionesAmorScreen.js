@@ -4,8 +4,10 @@ import {
   ImageBackground, ActivityIndicator
 } from 'react-native';
 import { fetchWithAuth } from '../apiHelpers';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import CustomAlert from '../components/CustomAlert';
+import BackButton from '../components/BackButton';
+import { navigationHistory } from '../App';
 
 export default function PocionesAmorScreen() {
   const [pociones, setPociones] = useState([]);
@@ -14,6 +16,20 @@ export default function PocionesAmorScreen() {
   const [perfil, setPerfil] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
+
+  // Registrar esta pantalla en el histórico cuando obtiene el foco
+  useFocusEffect(
+    React.useCallback(() => {
+      // Verificamos si ya está registrada para evitar duplicados
+      if (navigationHistory.peek() !== 'PocionesAmor') {
+        console.log('Registering PocionesAmor in history');
+      }
+      
+      return () => {
+        // Cleanup si es necesario
+      };
+    }, [])
+  );
 
   // Estados para alertas personalizadas
   const [alertVisible, setAlertVisible] = useState(false);
@@ -181,6 +197,8 @@ export default function PocionesAmorScreen() {
         style={styles.background}
         resizeMode="cover"
       >
+        <BackButton />
+
         <View style={styles.overlay}>
           <View style={styles.suscripcionContainer}>
             <Text style={styles.suscripcionTitulo}>Acceso Restringido</Text>
@@ -300,13 +318,14 @@ export default function PocionesAmorScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Los estilos se mantienen igual
   background: {
     flex: 1,
   },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingTop: 50,
+    paddingTop: 80,
   },
   titulo: {
     fontFamily: 'TarotTitles',

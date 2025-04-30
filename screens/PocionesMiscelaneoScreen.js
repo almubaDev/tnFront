@@ -4,8 +4,10 @@ import {
   ImageBackground, ActivityIndicator
 } from 'react-native';
 import { fetchWithAuth } from '../apiHelpers';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import CustomAlert from '../components/CustomAlert';
+import BackButton from '../components/BackButton';
+import { navigationHistory } from '../App';
 
 export default function PocionesMiscelaneoScreen() {
   const [pociones, setPociones] = useState([]);
@@ -14,6 +16,20 @@ export default function PocionesMiscelaneoScreen() {
   const [perfil, setPerfil] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
+
+  // Registrar esta pantalla en el histórico cuando obtiene el foco
+  useFocusEffect(
+    React.useCallback(() => {
+      // Verificamos si ya está registrada para evitar duplicados
+      if (navigationHistory.peek() !== 'PocionesMiscelaneo') {
+        console.log('Current navigation history in PocionesMiscelaneo:', navigationHistory.history);
+      }
+      
+      return () => {
+        // Cleanup si es necesario
+      };
+    }, [])
+  );
 
   // Estados para alertas personalizadas
   const [alertVisible, setAlertVisible] = useState(false);
@@ -94,6 +110,8 @@ export default function PocionesMiscelaneoScreen() {
           { text: "Cancelar", onPress: () => setAlertVisible(false) },
           { text: "Ver planes", onPress: () => {
             setAlertVisible(false);
+            // Registrar el estado actual antes de navegar
+            navigationHistory.push('PocionesMiscelaneo');
             navigation.navigate('SubscriptionScreen');
           }}
         ]
@@ -109,6 +127,8 @@ export default function PocionesMiscelaneoScreen() {
           { text: "Cancelar", onPress: () => setAlertVisible(false) },
           { text: "Ir a la tienda", onPress: () => {
             setAlertVisible(false);
+            // Registrar el estado actual antes de navegar
+            navigationHistory.push('PocionesMiscelaneo');
             navigation.navigate('Tienda');
           }}
         ]
@@ -181,6 +201,8 @@ export default function PocionesMiscelaneoScreen() {
         style={styles.background}
         resizeMode="cover"
       >
+        <BackButton />
+
         <View style={styles.overlay}>
           <View style={styles.suscripcionContainer}>
             <Text style={styles.suscripcionTitulo}>Acceso Restringido</Text>
@@ -189,7 +211,11 @@ export default function PocionesMiscelaneoScreen() {
             </Text>
             <TouchableOpacity 
               style={styles.suscripcionBoton}
-              onPress={() => navigation.navigate('SubscriptionScreen')}
+              onPress={() => {
+                // Registrar el estado actual antes de navegar
+                navigationHistory.push('PocionesMiscelaneo');
+                navigation.navigate('SubscriptionScreen');
+              }}
             >
               <Text style={styles.suscripcionBotonTexto}>Ver Planes de Suscripción</Text>
             </TouchableOpacity>
@@ -306,7 +332,7 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingTop: 50,
+    paddingTop: 80,
   },
   titulo: {
     fontFamily: 'TarotTitles',

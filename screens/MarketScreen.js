@@ -6,12 +6,12 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
-  ScrollView,
-  BackHandler
+  ScrollView
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { fetchWithAuth } from '../apiHelpers';
 import CustomAlert from '../components/CustomAlert';
+import { navigationHistory } from '../App';
 
 const { width } = Dimensions.get('window');
 
@@ -23,8 +23,11 @@ export default function MarketScreen() {
   // Manejo del botón de retroceso
   useFocusEffect(
     React.useCallback(() => {
-      // Dentro de MainTabs, dejamos que el manejador centralizado de App.js se encargue
-      // ya que estamos en una pantalla principal
+      // Registramos esta pantalla en el histórico cuando obtiene el foco
+      if (navigationHistory.peek() !== 'MainTabs') {
+        navigationHistory.push('MainTabs');
+      }
+      
       return () => {};
     }, [])
   );
@@ -72,11 +75,18 @@ export default function MarketScreen() {
     }, [])
   );
 
+  // Función para navegar a una pantalla con registro en histórico
+  const navigateWithHistory = (screenName) => {
+    // Registrar la pantalla actual antes de navegar
+    navigationHistory.push('Mercado');
+    navigation.navigate(screenName);
+  };
+
   const verificarAccesoPociones = () => {
     if (!perfil) return;
     
     if (perfil.tiene_suscripcion) {
-      navigation.navigate('SubmenuPociones');
+      navigateWithHistory('SubmenuPociones');
     } else {
       showAlert(
         "Acceso Restringido", 
@@ -138,7 +148,8 @@ export default function MarketScreen() {
                 if (opcion.accion) {
                   opcion.accion();
                 } else {
-                  navigation.navigate(opcion.destino);
+                  // Usar la función de navegación con histórico
+                  navigateWithHistory(opcion.destino);
                 }
               }}
             >

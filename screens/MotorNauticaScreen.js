@@ -2,10 +2,28 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Video } from 'expo-av';
 import { globalStyles } from '../styles/globalStyles';
+import { useFocusEffect } from '@react-navigation/native';
+import { navigationHistory } from '../App';
+import BackButton from '../components/BackButton';
 
 export default function MotorNauticaScreen() {
+  // Registrar esta pantalla en el histórico cuando obtiene el foco
+  useFocusEffect(
+    React.useCallback(() => {
+      // Verificamos si ya está registrada para evitar duplicados
+      if (navigationHistory.peek() !== 'MotorNauticaScreen') {
+        console.log('Current navigation history in MotorNauticaScreen:', navigationHistory.history);
+      }
+      
+      return () => {
+        // Cleanup si es necesario
+      };
+    }, [])
+  );
+
   return (
     <View style={styles.container}>
+      
       <Video
         source={require('../assets/video/fondo_motor_nautica.mp4')}
         style={StyleSheet.absoluteFill}
@@ -14,6 +32,9 @@ export default function MotorNauticaScreen() {
         resizeMode="cover"
         isMuted
       />
+
+<BackButton />
+        
       <ScrollView contentContainerStyle={styles.overlay}>
         <Text style={globalStyles.title}>El Motor Náutica</Text>
         <Text style={globalStyles.text}>
@@ -31,11 +52,13 @@ export default function MotorNauticaScreen() {
 }
 
 const styles = StyleSheet.create({
+  
   container: { flex: 1 },
   overlay: {
     flexGrow: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     padding: 24,
+    paddingTop: 80
   },
 });

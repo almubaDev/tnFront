@@ -16,12 +16,21 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tarotnautica.app"
+      "bundleIdentifier": "com.tarotnautica.app",
+      "requireFullScreen": true
+    },
+    "androidStatusBar": {
+      "hidden": true,
+      "translucent": true,
+      "backgroundColor": "#000000"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#000000"
+        "backgroundColor": "#000000",
+        "softwareKeyboardLayoutMode": "pan",
+        "navigationBarColor": "#000000",
+        "navigationBarHidden": true
       },
       "package": "com.tarotnautica.app"
     },

@@ -137,6 +137,34 @@ export const sessionEvents = {
   }
 };
 
+// Histórico de navegación para gestionar el botón Back
+export const navigationHistory = {
+  history: [],
+  
+  push(routeName) {
+    this.history.push(routeName);
+    console.log('Navigation history:', this.history);
+  },
+  
+  pop() {
+    const popped = this.history.pop();
+    console.log('Popped from history:', popped, 'New history:', this.history);
+    return popped;
+  },
+  
+  peek() {
+    return this.history.length > 0 ? this.history[this.history.length - 1] : null;
+  },
+  
+  clear() {
+    this.history = [];
+  },
+  
+  length() {
+    return this.history.length;
+  }
+};
+
 export default function App() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [initialRoute, setInitialRoute] = useState('Welcome');
@@ -217,6 +245,24 @@ export default function App() {
         return true; // Prevenimos el comportamiento por defecto
       } 
       
+      // Manejar pantallas de submenu con histórico personalizado
+      if (isSubMenuScreen(currentRoute.name)) {
+        // Intentar obtener la ruta anterior
+        const prevScreen = navigationHistory.pop();
+        
+        if (prevScreen) {
+          // Si hay una pantalla anterior en nuestro histórico, navegar a ella
+          navigationRef.current.navigate(prevScreen);
+          return true;
+        }
+        // Si no hay registro en nuestra historia, intentar volver a MainTabs
+        else if (navigationRef.current.canGoBack()) {
+          navigationRef.current.navigate('MainTabs');
+          return true;
+        }
+      }
+      
+      // Para el resto de pantallas, usar el sistema de navegación normal
       // Si podemos navegar hacia atrás, lo hacemos
       if (navigationRef.current.canGoBack()) {
         navigationRef.current.goBack();
@@ -226,6 +272,48 @@ export default function App() {
     
     // En otros casos, dejamos que el sistema maneje el retroceso
     return false;
+  };
+  
+  // Función para identificar si una pantalla es submenu
+  const isSubMenuScreen = (screenName) => {
+    const subMenuScreens = [
+      'HechizosAmor', 
+      'HechizosDinero', 
+      'HechizosMiscelaneo',
+      'SubmenuPociones',
+      'PocionesAmor',
+      'PocionesDinero',
+      'PocionesMiscelaneo',
+      'MotorNauticaScreen'
+    ];
+    
+    return subMenuScreens.includes(screenName);
+  };
+  
+  // Efecto para añadir el listener global del botón de retroceso
+  useEffect(() => {
+    BackHandler.addEventListener('hardwareBackPress', handleBackPress);
+    
+    return () => {
+      BackHandler.removeEventListener('hardwareBackPress', handleBackPress);
+    };
+  }, []);
+  
+  // Monitorear los cambios de navegación para mantener el histórico
+  const onNavigationStateChange = (state) => {
+    if (state) {
+      const currentRouteName = navigationRef.current.getCurrentRoute().name;
+      
+      // Solo registramos pantallas principales y submenús
+      if (currentRouteName === 'MainTabs' || isSubMenuScreen(currentRouteName)) {
+        const previousRoute = navigationHistory.peek();
+        
+        // Evitar duplicados secuenciales en el histórico
+        if (previousRoute !== currentRouteName) {
+          navigationHistory.push(currentRouteName);
+        }
+      }
+    }
   };
 
   if (isLoading || !fontsLoaded) {
@@ -253,7 +341,10 @@ export default function App() {
       {/* Componente de instalación PWA que funciona en todas las plataformas */}
       <PWAInstallPrompt />
 
-      <NavigationContainer ref={navigationRef}>
+      <NavigationContainer 
+        ref={navigationRef}
+        onStateChange={onNavigationStateChange}
+      >
         <Stack.Navigator 
           initialRouteName={initialRoute}
           screenOptions={{ 
@@ -277,19 +368,7 @@ export default function App() {
               gestureEnabled: false // Desactivar deslizamiento para volver
             }}
           >
-            {(props) => {
-              // Agregar manejo del botón de retroceso cuando estamos en las tabs principales
-              useFocusEffect(
-                React.useCallback(() => {
-                  const backHandler = BackHandler.addEventListener(
-                    "hardwareBackPress", 
-                    handleBackPress
-                  );
-                  return () => backHandler.remove();
-                }, [])
-              );
-              return <MainTabs fontsLoaded={fontsLoaded} {...props} />;
-            }}
+            {(props) => <MainTabs fontsLoaded={fontsLoaded} {...props} />}
           </Stack.Screen>
           <Stack.Screen name="SubscriptionScreen" component={SubscriptionScreen} />
           <Stack.Screen name="HechizosAmor" component={HechizosAmorScreen} />
